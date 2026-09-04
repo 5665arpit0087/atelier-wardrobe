@@ -5,9 +5,9 @@ import { deleteImage, getAllImages, putImage } from "../data/imageStore";
 import { compressImage, type CompressedImage } from "../utils/image";
 import { resolveOutfit } from "../domain/stylist";
 
-export type Screen = "home" | "wardrobe" | "stylist" | "looks" | "profile";
+export type Screen = "home" | "wardrobe" | "stylist" | "looks" | "trips" | "profile";
 
-const SCREENS: Screen[] = ["home", "wardrobe", "stylist", "looks", "profile"];
+const SCREENS: Screen[] = ["home", "wardrobe", "stylist", "looks", "trips", "profile"];
 
 function screenFromHash(): Screen {
   try {

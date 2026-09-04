@@ -1,6 +1,6 @@
 import hero from "./assets/hero.jpg";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, Home, Shirt, Sparkles, User } from "lucide-react";
+import { BookOpen, Home, Luggage, Shirt, Sparkles, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AddItemSheet } from "./components/AddItemSheet";
 import { ItemDetailSheet } from "./components/ItemDetailSheet";
@@ -10,6 +10,7 @@ import { HomeScreen } from "./screens/HomeScreen";
 import { LooksScreen } from "./screens/LooksScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { StylistScreen } from "./screens/StylistScreen";
+import { TripsScreen } from "./screens/TripsScreen";
 import { WardrobeScreen } from "./screens/WardrobeScreen";
 import { AtelierProvider, useAtelier, type Screen } from "./store/AtelierStore";
 import { cn } from "./utils/cn";
@@ -19,6 +20,7 @@ const NAV: { key: Screen; label: string; icon: typeof Home }[] = [
   { key: "wardrobe", label: "Wardrobe", icon: Shirt },
   { key: "stylist", label: "Stylist", icon: Sparkles },
   { key: "looks", label: "Looks", icon: BookOpen },
+  { key: "trips", label: "Trips", icon: Luggage },
   { key: "profile", label: "Profile", icon: User },
 ];
 
@@ -85,6 +87,7 @@ function Shell() {
             {screen === "wardrobe" && <WardrobeScreen />}
             {screen === "stylist" && <StylistScreen />}
             {screen === "looks" && <LooksScreen />}
+            {screen === "trips" && <TripsScreen />}
             {screen === "profile" && <ProfileScreen />}
           </motion.div>
         </AnimatePresence>
