@@ -6,6 +6,8 @@
  */
 const MAX_WIDTH = 720;
 const TARGET_BYTES = 50 * 1024;
+const MAX_INPUT_BYTES = 15 * 1024 * 1024;
+const ACCEPTED_PREFIX = "image/";
 
 function loadBitmap(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -40,6 +42,16 @@ export interface CompressedImage {
 }
 
 export async function compressImage(file: File): Promise<CompressedImage> {
+  if (!file.type.startsWith(ACCEPTED_PREFIX)) {
+    throw new Error(`Unsupported file type "${file.type || "unknown"}". Please choose a photo (JPEG, PNG, WebP).`);
+  }
+  if (/heic|heif/i.test(file.type) || /\.hei[cf]$/i.test(file.name)) {
+    throw new Error("HEIC photos aren't supported in this browser. Please convert to JPEG first.");
+  }
+  if (file.size > MAX_INPUT_BYTES) {
+    throw new Error(`That photo is ${formatBytes(file.size)} — please choose one under ${formatBytes(MAX_INPUT_BYTES)}.`);
+  }
+  if (file.size === 0) throw new Error("That file is empty.");
   const img = await loadBitmap(file);
   const scale = Math.min(1, MAX_WIDTH / img.naturalWidth);
   const width = Math.round(img.naturalWidth * scale);
@@ -48,7 +60,8 @@ export async function compressImage(file: File): Promise<CompressedImage> {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Image processing isn't available in this browser.");
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   ctx.drawImage(img, 0, 0, width, height);

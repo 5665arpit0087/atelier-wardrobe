@@ -7,6 +7,17 @@ import { resolveOutfit } from "../domain/stylist";
 
 export type Screen = "home" | "wardrobe" | "stylist" | "looks" | "profile";
 
+const SCREENS: Screen[] = ["home", "wardrobe", "stylist", "looks", "profile"];
+
+function screenFromHash(): Screen {
+  try {
+    const h = window.location.hash.replace(/^#\/?/, "").split("?")[0] as Screen;
+    return SCREENS.includes(h) ? h : "home";
+  } catch {
+    return "home";
+  }
+}
+
 export interface NewItemInput {
   name: string;
   brand: string;
@@ -32,6 +43,11 @@ export interface NewOutfitInput {
   styleTip: string;
 }
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Store {
   ready: boolean;
   items: WardrobeItem[];
@@ -40,7 +56,8 @@ interface Store {
   meta: Meta;
   imageUrls: Record<string, string>;
   toast: string | null;
-  notify: (msg: string) => void;
+  toastAction: ToastAction | null;
+  notify: (msg: string, action?: ToastAction) => void;
 
   screen: Screen;
   setScreen: (s: Screen) => void;
@@ -63,6 +80,7 @@ interface Store {
   removeImage: (itemId: string) => Promise<void>;
   addOutfit: (input: NewOutfitInput) => Outfit;
   deleteOutfit: (id: string) => void;
+  undoLastDelete: () => void;
   updateMeta: (patch: Partial<Meta>) => void;
   reset: () => void;
 }
@@ -76,9 +94,11 @@ export function AtelierProvider({ children }: { children: ReactNode }) {
   const [meta, setMeta] = useState<Meta>({ seededAt: 0, name: "", build: "", skinTone: "", onboarded: false });
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<string | null>(null);
+  const [toastAction, setToastAction] = useState<ToastAction | null>(null);
   const toastTimer = useRef<number | null>(null);
+  const lastDeleted = useRef<{ item?: WardrobeItem; itemOutfits?: Outfit[]; outfit?: Outfit } | null>(null);
 
-  const [screen, setScreen] = useState<Screen>("home");
+  const [screen, setScreenState] = useState<Screen>(() => screenFromHash());
   const [selectedItemId, openItem] = useState<string | null>(null);
   const [selectedOutfitId, openOutfit] = useState<string | null>(null);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
@@ -91,6 +111,29 @@ export function AtelierProvider({ children }: { children: ReactNode }) {
   const setWeatherNow = useCallback((w: Weather) => {
     setWeatherNowState(w);
     localStorage.setItem("atelier.v1.weather", w);
+  }, []);
+
+  // Hash routing: deep-linkable screens, survives reload + back/forward.
+  const setScreen = useCallback((s: Screen) => {
+    setScreenState(s);
+    try {
+      const next = `#/${s}`;
+      if (window.location.hash !== next) window.history.pushState(null, "", next);
+    } catch {
+      /* non-browser / restricted context */
+    }
+  }, []);
+
+  useEffect(() => {
+    const onHash = () => setScreenState(screenFromHash());
+    window.addEventListener("hashchange", onHash);
+    // Ensure a hash exists on first load for shareable URLs.
+    try {
+      if (!window.location.hash) window.history.replaceState(null, "", `#/${screenFromHash()}`);
+    } catch {
+      /* ignore */
+    }
+    return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   // Open database on launch (seeds on first run) and hydrate image URLs.
@@ -114,10 +157,14 @@ export function AtelierProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (ready) saveOutfits(outfits); }, [outfits, ready]);
   useEffect(() => { if (ready) saveMeta(meta); }, [meta, ready]);
 
-  const notify = useCallback((msg: string) => {
+  const notify = useCallback((msg: string, action?: ToastAction) => {
     setToast(msg);
+    setToastAction(action ?? null);
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToast(null), 2400);
+    toastTimer.current = window.setTimeout(() => {
+      setToast(null);
+      setToastAction(null);
+    }, action ? 5000 : 2400);
   }, []);
 
   const resolved = useMemo(
@@ -200,12 +247,32 @@ export function AtelierProvider({ children }: { children: ReactNode }) {
 
   const deleteItem = useCallback((id: string) => {
     const item = items.find((i) => i.id === id);
+    if (!item) return;
+    const affected = outfits.filter((o) => [o.topId, o.layerId, o.bottomId, o.shoeId].includes(id));
+    lastDeleted.current = { item, itemOutfits: affected };
     if (item?.imageId) deleteImage(item.imageId).catch(() => {});
     setItems((prev) => prev.filter((i) => i.id !== id));
     setOutfits((prev) => prev.filter((o) => ![o.topId, o.layerId, o.bottomId, o.shoeId].includes(id)));
     openItem(null);
-    notify("Removed from wardrobe");
-  }, [items, notify]);
+    notify("Removed from wardrobe", {
+      label: "Undo",
+      onClick: () => {
+        const snap = lastDeleted.current;
+        if (snap?.item) {
+          setItems((prev) => (prev.some((i) => i.id === snap.item!.id) ? prev : [snap.item!, ...prev]));
+          if (snap.itemOutfits?.length) {
+            setOutfits((prev) => {
+              const ids = new Set(prev.map((o) => o.id));
+              return [...snap.itemOutfits!.filter((o) => !ids.has(o.id)), ...prev];
+            });
+          }
+          lastDeleted.current = null;
+        }
+        setToast(null);
+        setToastAction(null);
+      },
+    });
+  }, [items, outfits, notify]);
 
   const addOutfit = useCallback((input: NewOutfitInput) => {
     const outfit: Outfit = { id: uid("look"), ...input, favorite: true, wearCount: 0, createdAt: Date.now(), custom: true };
@@ -215,12 +282,30 @@ export function AtelierProvider({ children }: { children: ReactNode }) {
   }, [notify]);
 
   const deleteOutfit = useCallback((id: string) => {
+    const outfit = outfits.find((o) => o.id === id);
+    if (!outfit) return;
+    lastDeleted.current = { outfit };
     setOutfits((prev) => prev.filter((o) => o.id !== id));
     openOutfit(null);
-    notify("Look removed");
-  }, [notify]);
+    notify("Look removed", {
+      label: "Undo",
+      onClick: () => {
+        const snap = lastDeleted.current;
+        if (snap?.outfit) {
+          setOutfits((prev) => (prev.some((o) => o.id === snap.outfit!.id) ? prev : [snap.outfit!, ...prev]));
+          lastDeleted.current = null;
+        }
+        setToast(null);
+        setToastAction(null);
+      },
+    });
+  }, [notify, outfits]);
 
   const updateMeta = useCallback((patch: Partial<Meta>) => setMeta((m) => ({ ...m, ...patch })), []);
+
+  const undoLastDelete = useCallback(() => {
+    toastAction?.onClick();
+  }, [toastAction]);
 
   const reset = useCallback(() => {
     resetDatabase();
@@ -232,11 +317,11 @@ export function AtelierProvider({ children }: { children: ReactNode }) {
   }, [notify]);
 
   const value: Store = {
-    ready, items, outfits, resolved, meta, imageUrls, toast, notify,
+    ready, items, outfits, resolved, meta, imageUrls, toast, toastAction, notify,
     screen, setScreen, selectedItemId, openItem, selectedOutfitId, openOutfit, addSheetOpen, setAddSheetOpen,
     weatherNow, setWeatherNow,
     toggleItemFavorite, toggleOutfitFavorite, logWear, addItem, updateItem, deleteItem, attachImage, removeImage,
-    addOutfit, deleteOutfit, updateMeta, reset,
+    addOutfit, deleteOutfit, undoLastDelete, updateMeta, reset,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

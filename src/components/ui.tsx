@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { cn } from "../utils/cn";
 
 /* ───────── Section header ───────── */
@@ -165,6 +165,54 @@ export function Sheet({
   full?: boolean;
 }) {
   const controls = useDragControls();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const prevFocus = useRef<HTMLElement | null>(null);
+
+  // ESC to close + focus management.
+  useEffect(() => {
+    if (!open) return;
+    prevFocus.current = document.activeElement as HTMLElement | null;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      }
+      // Basic focus trap: keep Tab inside the sheet.
+      if (e.key === "Tab" && panelRef.current) {
+        const els = panelRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        const list = Array.from(els).filter((el) => !el.hasAttribute("disabled"));
+        if (!list.length) return;
+        const first = list[0];
+        const last = list[list.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", onKey, true);
+    // Move focus into the dialog.
+    const t = window.setTimeout(() => {
+      const target =
+        panelRef.current?.querySelector<HTMLElement>("button, input, select, textarea, [tabindex]") ?? panelRef.current;
+      target?.focus();
+    }, 60);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener("keydown", onKey, true);
+      document.body.style.overflow = prevOverflow;
+      prevFocus.current?.focus?.();
+    };
+  }, [open, onClose]);
+
   return (
     <AnimatePresence>
       {open && (
@@ -176,11 +224,18 @@ export function Sheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
+            aria-hidden="true"
           />
           <motion.div
             key="sheet"
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={title ?? "Details"}
+            aria-labelledby={title ? titleId : undefined}
+            tabIndex={-1}
             className={cn(
-              "absolute inset-x-0 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-[28px] border-t border-white/10 bg-[#0d131c] shadow-[0_-30px_80px_rgba(0,0,0,0.7)]",
+              "absolute inset-x-0 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-[28px] border-t border-white/10 bg-[#0d131c] shadow-[0_-30px_80px_rgba(0,0,0,0.7)] outline-none",
               full ? "top-3" : "max-h-[92%]",
             )}
             initial={{ y: "100%" }}
@@ -204,9 +259,9 @@ export function Sheet({
             </div>
             {title && (
               <div className="flex shrink-0 items-center justify-between px-5 pb-3">
-                <h3 className="font-serif text-xl text-ink">{title}</h3>
-                <button onClick={onClose} className="press rounded-full border border-white/10 p-2 text-muted hover:text-ink">
-                  <X size={16} />
+                <h3 id={titleId} className="font-serif text-xl text-ink">{title}</h3>
+                <button onClick={onClose} aria-label="Close dialog" className="press rounded-full border border-white/10 p-2 text-muted hover:text-ink">
+                  <X size={16} aria-hidden="true" />
                 </button>
               </div>
             )}

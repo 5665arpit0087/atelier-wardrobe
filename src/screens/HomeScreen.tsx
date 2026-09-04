@@ -53,7 +53,7 @@ export function HomeScreen() {
             <span className="gold-text italic">{meta.name.split(" ")[0]}</span>
           </h1>
         </div>
-        <button onClick={() => setScreen("profile")} className="press relative mt-1 h-11 w-11 overflow-hidden rounded-2xl border border-champagne/30 gold-fill shadow-gold">
+        <button onClick={() => setScreen("profile")} aria-label="Open profile" className="press relative mt-1 h-11 w-11 overflow-hidden rounded-2xl border border-champagne/30 gold-fill shadow-gold">
           <span className="absolute inset-0 flex items-center justify-center font-serif text-lg font-semibold text-obsidian">
             {meta.name.trim().charAt(0).toUpperCase() || "A"}
           </span>

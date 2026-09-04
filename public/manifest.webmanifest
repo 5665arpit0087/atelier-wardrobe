@@ -1,0 +1,19 @@
+{
+  "name": "Atelier — Personal Stylist & Wardrobe",
+  "short_name": "Atelier",
+  "description": "Your personal digital stylist and capsule wardrobe manager.",
+  "start_url": "/atelier-wardrobe/#/",
+  "scope": "/atelier-wardrobe/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07090e",
+  "theme_color": "#07090e",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

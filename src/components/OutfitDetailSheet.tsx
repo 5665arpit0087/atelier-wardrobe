@@ -41,8 +41,8 @@ export function OutfitDetailSheet() {
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-ink">+ {o.layer.subcategory}</span>
               </div>
             )}
-            <button onClick={() => toggleOutfitFavorite(o.id)} className="press absolute right-3 top-3 rounded-full border border-white/10 bg-black/40 p-2.5 backdrop-blur">
-              <Heart size={18} className={o.favorite ? "fill-rose-a text-rose-a" : "text-ink"} />
+            <button onClick={() => toggleOutfitFavorite(o.id)} aria-label={o.favorite ? "Remove look from favorites" : "Add look to favorites"} aria-pressed={o.favorite} className="press absolute right-3 top-3 rounded-full border border-white/10 bg-black/40 p-2.5 backdrop-blur">
+              <Heart size={18} aria-hidden="true" className={o.favorite ? "fill-rose-a text-rose-a" : "text-ink"} />
             </button>
           </div>
 

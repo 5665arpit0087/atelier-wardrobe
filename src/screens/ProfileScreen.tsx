@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { Database, HardDrive, Image as ImageIcon, RotateCcw, Ruler, Sparkles, Sun, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Database, Download, HardDrive, Image as ImageIcon, RotateCcw, Ruler, Sparkles, Sun, Trash2, Upload } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { GhostButton } from "../components/ui";
 import { getAllImages } from "../data/imageStore";
+import { saveItems, saveMeta, saveOutfits } from "../data/repository";
 import { CATEGORIES } from "../domain/types";
 import { useAtelier } from "../store/AtelierStore";
 import { formatBytes } from "../utils/image";
@@ -14,10 +15,11 @@ const guide = [
 ];
 
 export function ProfileScreen() {
-  const { items, outfits, meta, updateMeta, reset, imageUrls } = useAtelier();
+  const { items, outfits, meta, updateMeta, reset, imageUrls, notify } = useAtelier();
   const [storage, setStorage] = useState<{ count: number; bytes: number }>({ count: 0, bytes: 0 });
   const [confirm, setConfirm] = useState(false);
   const [name, setName] = useState(meta.name);
+  const importRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setName(meta.name), [meta.name]);
   useEffect(() => {
@@ -29,6 +31,57 @@ export function ProfileScreen() {
 
   const mostWorn = useMemo(() => [...items].sort((a, b) => b.wearCount - a.wearCount).slice(0, 3).filter((i) => i.wearCount > 0), [items]);
   const dbBytes = useMemo(() => new Blob([JSON.stringify(items), JSON.stringify(outfits)]).size, [items, outfits]);
+
+  const exportBackup = () => {
+    try {
+      const payload = {
+        app: "atelier-wardrobe",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        items,
+        outfits,
+        meta,
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `atelier-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+      notify("Backup downloaded — keep it somewhere safe");
+    } catch {
+      notify("Couldn't create backup");
+    }
+  };
+
+  const importBackup = async (f?: File) => {
+    if (!f) return;
+    try {
+      const raw = await f.text();
+      const data = JSON.parse(raw) as { items?: unknown; outfits?: unknown; meta?: unknown };
+      if (!Array.isArray(data.items) || !Array.isArray(data.outfits) || typeof data.meta !== "object" || !data.meta) {
+        notify("That file doesn't look like an Atelier backup");
+        return;
+      }
+      // Minimal shape check before overwriting.
+      const itemsOk = (data.items as unknown[]).every((i) => typeof i === "object" && i !== null && "id" in i && "category" in i);
+      const outfitsOk = (data.outfits as unknown[]).every((o) => typeof o === "object" && o !== null && "id" in o && "topId" in o);
+      if (!itemsOk || !outfitsOk) {
+        notify("Backup file is invalid — nothing was changed");
+        return;
+      }
+      saveItems(data.items as typeof items);
+      saveOutfits(data.outfits as typeof outfits);
+      saveMeta({ ...(meta as object), ...(data.meta as object) } as typeof meta);
+      notify("Backup restored — reloading");
+      window.setTimeout(() => window.location.reload(), 800);
+    } catch {
+      notify("Couldn't read that backup file");
+    }
+  };
 
   return (
     <div className="safe-bottom">
@@ -48,6 +101,7 @@ export function ProfileScreen() {
           <div className="min-w-0 flex-1">
             <input
               value={name}
+              aria-label="Display name"
               onChange={(e) => setName(e.target.value)}
               onBlur={() => updateMeta({ name: name.trim() || "Atelier Client" })}
               className="w-full bg-transparent font-serif text-[22px] text-ink outline-none"
@@ -131,6 +185,16 @@ export function ProfileScreen() {
           <Row icon={ImageIcon} label="Wardrobe images" value={`${storage.count} photos · ${formatBytes(storage.bytes)}`} />
           <Row icon={HardDrive} label="Compression pipeline" value="≤ 720px · WebP · ~50 KB target" tone="emerald" />
         </div>
+        <input ref={importRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { void importBackup(e.target.files?.[0]); e.target.value = ""; }} />
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <GhostButton onClick={exportBackup} className="w-full">
+            <Download size={15} /> Export backup
+          </GhostButton>
+          <GhostButton onClick={() => importRef.current?.click()} className="w-full">
+            <Upload size={15} /> Import backup
+          </GhostButton>
+        </div>
+        <p className="mt-2 text-[10.5px] leading-relaxed text-muted">Backups include pieces, looks and profile. Photos stay on this device (IndexedDB) and are not part of the file.</p>
       </section>
 
       <section className="mt-6 px-5">

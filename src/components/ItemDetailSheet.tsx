@@ -24,8 +24,8 @@ export function ItemDetailSheet() {
       const r = await attachImage(item.id, f);
       setLast(r);
       notify(`Photo compressed ${formatBytes(r.originalBytes)} → ${formatBytes(r.bytes)}`);
-    } catch {
-      notify("Couldn't process that image");
+    } catch (e) {
+      notify(e instanceof Error ? e.message : "Couldn't process that image");
     } finally {
       setBusy(false);
     }
@@ -43,9 +43,11 @@ export function ItemDetailSheet() {
             </div>
             <button
               onClick={() => toggleItemFavorite(item.id)}
+              aria-label={item.favorite ? "Remove from favorites" : "Add to favorites"}
+              aria-pressed={item.favorite}
               className="press absolute right-4 top-4 rounded-full border border-white/10 bg-black/40 p-2.5 backdrop-blur"
             >
-              <Heart size={18} className={item.favorite ? "fill-rose-a text-rose-a" : "text-ink"} />
+              <Heart size={18} aria-hidden="true" className={item.favorite ? "fill-rose-a text-rose-a" : "text-ink"} />
             </button>
           </div>
 
@@ -60,7 +62,7 @@ export function ItemDetailSheet() {
 
           {/* Photo actions */}
           <div className="mt-5 px-5">
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" capture="environment" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
             <div className="card rounded-2xl p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -69,12 +71,12 @@ export function ItemDetailSheet() {
                 </div>
                 <div className="flex gap-2">
                   {item.imageId && (
-                    <button onClick={() => removeImage(item.id)} className="press rounded-xl border border-white/10 p-2.5 text-muted hover:text-rose-a">
-                      <ImageOff size={16} />
+                    <button onClick={() => removeImage(item.id)} aria-label="Remove garment photo" className="press rounded-xl border border-white/10 p-2.5 text-muted hover:text-rose-a">
+                      <ImageOff size={16} aria-hidden="true" />
                     </button>
                   )}
-                  <button onClick={() => fileRef.current?.click()} disabled={busy} className="press flex items-center gap-1.5 rounded-xl gold-fill px-3.5 py-2.5 text-xs font-bold text-obsidian disabled:opacity-60">
-                    {busy ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />} {item.imageId ? "Replace" : "Add photo"}
+                  <button onClick={() => fileRef.current?.click()} disabled={busy} aria-label={item.imageId ? "Replace garment photo" : "Add garment photo"} className="press flex items-center gap-1.5 rounded-xl gold-fill px-3.5 py-2.5 text-xs font-bold text-obsidian disabled:opacity-60">
+                    {busy ? <Loader2 size={14} aria-hidden="true" className="animate-spin" /> : <Camera size={14} aria-hidden="true" />} {item.imageId ? "Replace" : "Add photo"}
                   </button>
                 </div>
               </div>

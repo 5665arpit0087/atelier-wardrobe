@@ -52,7 +52,7 @@ function DeviceFrame({ children }: { children: React.ReactNode }) {
 }
 
 function Shell() {
-  const { ready, screen, setScreen, meta, updateMeta, toast, selectedItemId, selectedOutfitId, addSheetOpen } = useAtelier();
+  const { ready, screen, setScreen, meta, updateMeta, toast, toastAction, selectedItemId, selectedOutfitId, addSheetOpen } = useAtelier();
   const [splash, setSplash] = useState(true);
   const modal = !!selectedItemId || !!selectedOutfitId || addSheetOpen;
 
@@ -91,15 +91,15 @@ function Shell() {
       </main>
 
       {/* Bottom nav */}
-      <nav className={cn("absolute inset-x-0 bottom-0 z-30 px-4 pb-[max(env(safe-area-inset-bottom),14px)] transition-opacity", modal && "pointer-events-none opacity-0")}>
+      <nav aria-label="Primary" className={cn("absolute inset-x-0 bottom-0 z-30 px-4 pb-[max(env(safe-area-inset-bottom),14px)] transition-opacity", modal && "pointer-events-none opacity-0")}>
         <div className="pointer-events-none absolute inset-x-0 -top-10 bottom-0 bg-gradient-to-t from-obsidian via-obsidian/85 to-transparent" />
         <div className="card relative flex items-center justify-between rounded-[26px] p-1.5 shadow-card">
           {NAV.map((n) => {
             const active = screen === n.key;
             return (
-              <button key={n.key} onClick={() => setScreen(n.key)} className="press relative flex flex-1 flex-col items-center gap-1 rounded-2xl py-2">
+              <button key={n.key} onClick={() => setScreen(n.key)} aria-label={n.label} aria-current={active ? "page" : undefined} className="press relative flex flex-1 flex-col items-center gap-1 rounded-2xl py-2">
                 {active && <motion.span layoutId="navPill" className="absolute inset-0 rounded-2xl bg-champagne/10 ring-1 ring-champagne/25" transition={{ type: "spring", stiffness: 380, damping: 32 }} />}
-                <n.icon size={18} className={cn("relative transition-colors", active ? "text-champagne" : "text-muted")} strokeWidth={active ? 2.2 : 1.8} />
+                <n.icon size={18} aria-hidden="true" className={cn("relative transition-colors", active ? "text-champagne" : "text-muted")} strokeWidth={active ? 2.2 : 1.8} />
                 <span className={cn("relative text-[9.5px] font-semibold tracking-wide", active ? "text-champagne" : "text-muted")}>{n.label}</span>
               </button>
             );
@@ -116,12 +116,19 @@ function Shell() {
       <AnimatePresence>
         {toast && (
           <motion.div
+            role="status"
+            aria-live="polite"
             initial={{ opacity: 0, y: -16, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
-            className="absolute inset-x-6 top-4 z-[60] rounded-2xl border border-champagne/30 bg-[#0d131c]/95 px-4 py-3 text-center text-[12px] font-medium text-ink shadow-gold backdrop-blur"
+            className="absolute inset-x-6 top-4 z-[60] flex items-center justify-between gap-3 rounded-2xl border border-champagne/30 bg-[#0d131c]/95 px-4 py-3 text-[12px] font-medium text-ink shadow-gold backdrop-blur"
           >
-            {toast}
+            <span className="min-w-0 flex-1 text-center">{toast}</span>
+            {toastAction && (
+              <button onClick={toastAction.onClick} className="press shrink-0 rounded-full bg-champagne px-3 py-1.5 text-[11px] font-bold text-obsidian">
+                {toastAction.label}
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

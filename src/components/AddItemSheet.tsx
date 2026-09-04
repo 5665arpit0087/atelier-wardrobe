@@ -42,6 +42,7 @@ export function AddItemSheet() {
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setSubcategory(SUBS[category][0]), [category]);
@@ -57,20 +58,48 @@ export function AddItemSheet() {
   const canSave = name.trim().length > 1 && occ.length > 0;
 
   const resetForm = () => {
-    setBrand(""); setName(""); setFile(null); setDone(null); setOcc(["SMART_CASUAL", "DAILY_CASUAL"]);
+    setBrand(""); setName(""); setFile(null); setDone(null); setFileError(null); setOcc(["SMART_CASUAL", "DAILY_CASUAL"]);
+  };
+
+  const onPickFile = (f?: File | null) => {
+    setFileError(null);
+    if (!f) return setFile(null);
+    if (!f.type.startsWith("image/")) {
+      setFile(null);
+      setFileError("Please choose a photo file (JPEG, PNG, WebP).");
+      return;
+    }
+    if (/heic|heif/i.test(f.type) || /\.hei[cf]$/i.test(f.name)) {
+      setFile(null);
+      setFileError("HEIC isn't supported here — please use JPEG instead.");
+      return;
+    }
+    if (f.size > 15 * 1024 * 1024) {
+      setFile(null);
+      setFileError("That photo is over 15 MB — please pick a smaller one.");
+      return;
+    }
+    setFile(f);
   };
 
   const submit = async () => {
     if (!canSave) return;
     setBusy(true);
-    const result = await addItem({
-      name: brand.trim() ? `${brand.trim()} ${name.trim()}` : name.trim(),
-      brand: brand.trim() || "Personal",
-      category, subcategory, color, hex, tone, occasions: occ, weather, file: file ?? undefined,
-    });
+    setFileError(null);
+    try {
+      const result = await addItem({
+        name: brand.trim() ? `${brand.trim()} ${name.trim()}` : name.trim(),
+        brand: brand.trim() || "Personal",
+        category, subcategory, color, hex, tone, occasions: occ, weather, file: file ?? undefined,
+      });
+      setDone(result ? `Photo stored at ${formatBytes(result.bytes)} (${result.width}×${result.height}, ${result.format.split("/")[1]})` : "Added to your capsule");
+      window.setTimeout(() => { setAddSheetOpen(false); resetForm(); }, 1100);
+    } catch (e) {
+      setFileError(e instanceof Error ? e.message : "Couldn't save that photo.");
+      setBusy(false);
+      return;
+    }
     setBusy(false);
-    setDone(result ? `Photo stored at ${formatBytes(result.bytes)} (${result.width}×${result.height}, ${result.format.split("/")[1]})` : "Added to your capsule");
-    window.setTimeout(() => { setAddSheetOpen(false); resetForm(); }, 1100);
   };
 
   return (
@@ -89,10 +118,11 @@ export function AddItemSheet() {
               <p className="text-[13px] font-semibold text-ink">Garment photo</p>
               <p className="mt-0.5 text-[11px] leading-relaxed text-muted">Resized to ≤720px, WebP, ~50 KB — light on storage, quick to load.</p>
             </div>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            <button onClick={() => fileRef.current?.click()} className="press flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] py-2.5 text-xs font-semibold text-ink">
-              <Camera size={14} /> {file ? "Change photo" : "Camera or gallery"}
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/*" className="hidden" onChange={(e) => onPickFile(e.target.files?.[0] ?? null)} />
+            <button onClick={() => fileRef.current?.click()} aria-label={file ? "Change garment photo" : "Add garment photo from camera or gallery"} className="press flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] py-2.5 text-xs font-semibold text-ink">
+              <Camera size={14} aria-hidden="true" /> {file ? "Change photo" : "Camera or gallery"}
             </button>
+            {fileError && <p role="alert" className="mt-2 text-[11px] leading-relaxed text-rose-a">{fileError}</p>}
           </div>
         </div>
 
