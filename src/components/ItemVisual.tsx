@@ -3,6 +3,7 @@ import { useAtelier } from "../store/AtelierStore";
 import { GarmentIcon } from "./GarmentIcon";
 import { cn } from "../utils/cn";
 import { hexToHsl } from "../domain/stylist";
+import { useState } from "react";
 
 interface Props {
   item: WardrobeItem;
@@ -12,10 +13,19 @@ interface Props {
   bg?: boolean;
 }
 
-/** Photo if the user attached one, otherwise a tinted silhouette on a fabric-textured swatch. */
+/**
+ * Photo priority: user upload → bundled file `images/wardrobe/<id>.jpg`
+ * (or explicit `photo` override) → tinted silhouette. Missing bundled
+ * files fail silently back to the silhouette via onError.
+ */
 export function ItemVisual({ item, className, iconClassName, bg = true }: Props) {
   const { imageUrls } = useAtelier();
-  const url = item.imageId ? imageUrls[item.imageId] : undefined;
+  const [missing, setMissing] = useState<string | null>(null);
+  const uploaded = item.imageId ? imageUrls[item.imageId] : undefined;
+  const file = item.photo ?? `${item.id}.jpg`;
+  const bundled = `${import.meta.env.BASE_URL}images/wardrobe/${file}`;
+  const missKey = `${item.id}|${file}`;
+  const url = uploaded ?? (missing === missKey ? undefined : bundled);
   const { h, s } = hexToHsl(item.hex);
   const tint = `hsl(${h} ${Math.round(s * 100 * 0.6)}% 12%)`;
   const tint2 = `hsl(${h} ${Math.round(s * 100 * 0.5)}% 7%)`;
@@ -27,7 +37,7 @@ export function ItemVisual({ item, className, iconClassName, bg = true }: Props)
     >
       {bg && <div className="fabric absolute inset-0 opacity-70" />}
       {url ? (
-        <img src={url} alt={item.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+        <img src={url} alt={item.name} onError={() => setMissing(missKey)} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
           <div

@@ -21,6 +21,8 @@ export interface WardrobeItem {
   occasions: Occasion[];
   /** local image (data url) stored in the internal image store */
   imageId?: string;
+  /** bundled static photo (public/images/…) shown when no user photo attached */
+  photo?: string;
   favorite: boolean;
   wearCount: number;
   lastWorn?: number;
