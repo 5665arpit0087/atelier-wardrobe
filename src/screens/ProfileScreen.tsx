@@ -205,7 +205,7 @@ export function ProfileScreen() {
         ) : (
           <div className="card rounded-2xl border-rose-a/30 p-4">
             <p className="text-[13px] font-semibold text-ink">Reset the wardrobe?</p>
-            <p className="mt-1 text-[11.5px] text-muted">Custom pieces, saved looks and wear history will be removed. The 24-piece capsule and 18 curated looks will be re-seeded.</p>
+            <p className="mt-1 text-[11.5px] text-muted">Custom pieces, saved looks and wear history will be removed. The 24-piece capsule and 22 verified looks will be re-seeded.</p>
             <div className="mt-3 flex gap-2">
               <GhostButton onClick={() => setConfirm(false)} className="flex-1">Keep</GhostButton>
               <GhostButton danger onClick={() => { reset(); setConfirm(false); }} className="flex-1">

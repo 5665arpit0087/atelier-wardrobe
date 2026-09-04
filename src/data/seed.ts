@@ -332,8 +332,12 @@ const SEED_OUTFITS: SeedOutfit[] = [
   { id: "look_14", title: "Travel Streetwear", occ: "ATHLEISURE", weather: "COOL", topId: "roadster_hoodie", bottomId: "techno_black", shoeId: "redtape_sneakers", styleTip: "Maximum stretch and comfort on flights or road trips." },
   { id: "look_15", title: "Outdoor Active", occ: "ATHLEISURE", weather: "HOT", topId: "usp_olive", bottomId: "techno_beetle", shoeId: "asian_runners", styleTip: "Earthy tonal set for morning walks, hiking, or runs." },
   { id: "look_16", title: "Breathable Knit Setup", occ: "ATHLEISURE", weather: "HOT", topId: "as_rust", bottomId: "techno_black", shoeId: "mh_grey", styleTip: "Lightweight, easy slip-on setup for hot days." },
-  { id: "look_17", title: "Deep Forest Monochrome", occ: "DAILY_CASUAL", weather: "PLEASANT", topId: "as_rust", bottomId: "green_jeans", shoeId: "redtape_sneakers", styleTip: "Burnt rust contrasting against dark green denim creates an authentic autumn look." },
+  { id: "look_17", title: "Autumn Earth Contrast", occ: "DAILY_CASUAL", weather: "PLEASANT", topId: "as_rust", bottomId: "green_jeans", shoeId: "redtape_sneakers", styleTip: "Burnt rust contrasting against dark green denim creates an authentic autumn look." },
   { id: "look_18", title: "Crimson & Charcoal Casual", occ: "SMART_CASUAL", weather: "PLEASANT", topId: "snitch_maroon", bottomId: "charcoal_jeans", shoeId: "redtape_sneakers", styleTip: "Charcoal grounds the saturation of maroon for a modern urban aesthetic." },
+  { id: "look_19", title: "Burgundy & Olive Earth", occ: "SMART_CASUAL", weather: "PLEASANT", topId: "snitch_maroon", bottomId: "roadster_olive_chino", shoeId: "redtape_sneakers", styleTip: "Deep wine against olive is an elite earth-tone pairing — rich and refined." },
+  { id: "look_20", title: "Summer Casual Denim", occ: "DAILY_CASUAL", weather: "HOT", topId: "as_rust", bottomId: "roadster_light_blue", shoeId: "mh_grey", styleTip: "Breezy daylight casual — rust against a light wash keeps it warm and relaxed." },
+  { id: "look_21", title: "Pastel & Light Denim", occ: "DAILY_CASUAL", weather: "PLEASANT", topId: "snitch_mauve", bottomId: "roadster_light_blue", shoeId: "redtape_sneakers", styleTip: "Soft dusty mauve on light denim — a modern, easy daytime look." },
+  { id: "look_22", title: "Safari Earth Casual", occ: "DAILY_CASUAL", weather: "HOT", topId: "usp_olive", bottomId: "roadster_olive_chino", shoeId: "redtape_sneakers", styleTip: "Tonal olive utility — monochromatic earth dressing, head to toe." },
 ];
 
 const BASE_TS = Date.parse("2025-01-01T00:00:00Z");

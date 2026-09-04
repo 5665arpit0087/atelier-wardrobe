@@ -159,11 +159,11 @@ function Shell() {
                 <span className="gold-text italic">curated.</span>
               </h1>
               <p className="mt-4 text-[13px] leading-relaxed text-muted">
-                A 24-piece earth & jewel-tone capsule, 18 pre-styled looks, and a stylist engine tuned to an athletic build and warm skin.
+                A 24-piece earth & jewel-tone capsule, 22 verified looks, and a stylist engine tuned to an athletic build and warm skin.
               </p>
               <div className="mt-6 flex gap-2 text-[10px] uppercase tracking-[0.18em] text-muted">
                 <span className="rounded-full border border-white/10 px-3 py-1.5">24 pieces</span>
-                <span className="rounded-full border border-white/10 px-3 py-1.5">18 looks</span>
+                <span className="rounded-full border border-white/10 px-3 py-1.5">22 looks</span>
                 <span className="rounded-full border border-white/10 px-3 py-1.5">Offline · private</span>
               </div>
               <GoldButton className="mt-7" onClick={() => updateMeta({ onboarded: true })}>

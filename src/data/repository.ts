@@ -57,7 +57,25 @@ export function openDatabase(): DbSnapshot {
     write(KEY_ITEMS, items);
     write(KEY_OUTFITS, outfits);
     write(KEY_META, meta);
+    return { items, outfits, meta };
   }
+
+  // The app uses a fixed curated master list (no random combos): merge in any
+  // seed looks missing on this device and refresh renamed curated titles.
+  // Custom looks (custom: true) are never touched.
+  const seeds = seedOutfits();
+  let changed = false;
+  for (const s of seeds) {
+    const ex = outfits.find((o) => o.id === s.id);
+    if (!ex) {
+      outfits.push({ ...s });
+      changed = true;
+    } else if (!ex.custom && ex.title !== s.title) {
+      ex.title = s.title;
+      changed = true;
+    }
+  }
+  if (changed) write(KEY_OUTFITS, outfits);
   return { items, outfits, meta };
 }
 
